@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZooLingo | 英中动物词典</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #2D6A4F;
+            --primary-light: #40916C;
+            --accent: #D8F3DC;
+            --text-dark: #1B4332;
+            --text-light: #6c757d;
+            --bg: #F8F9FA;
+            --card-bg: #FFFFFF;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --radius: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        header {
+            background: var(--card-bg);
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        h1 { font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem; font-weight: 800; }
+        .subtitle { color: var(--text-light); margin-bottom: 1.5rem; }
+
+        .search-container { max-width: 600px; margin: 0 auto 1rem; }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border-radius: 50px;
+            border: 2px solid #e9ecef;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            outline: none;
+            background: #fdfdfd;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(64, 145, 108, 0.1);
+        }
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .filter-btn {
+            padding: 0.35rem 1rem;
+            border-radius: 20px;
+            border: 2px solid #e9ecef;
+            background: white;
+            color: var(--text-light);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+
+        .animal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 1.75rem 1.5rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        }
+
+        .card-emoji { font-size: 3rem; line-height: 1; margin-bottom: 0.25rem; }
+
+        .card-english { font-size: 1.4rem; font-weight: 700; color: var(--text-dark); }
+
+        .card-chinese { font-size: 1.15rem; color: var(--primary); font-weight: 500; }
+
+        .card-pinyin { font-size: 0.85rem; color: var(--text-light); }
+
+        .card-tag {
+            display: inline-block;
+            margin-top: 0.5rem;
+            padding: 0.2rem 0.65rem;
+            background: var(--accent);
+            color: var(--primary);
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            align-self: flex-start;
+        }
+
+        .card-tag.trending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(4px);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+
+        .modal {
+            background: white;
+            width: 90%; max-width: 460px;
+            border-radius: var(--radius);
+            padding: 2.5rem 2rem 2rem;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.active .modal { transform: scale(1); }
+
+        .modal-emoji { font-size: 5rem; text-align: center; margin-bottom: 1rem; }
+
+        .modal-title-en { font-size: 2rem; font-weight: 800; }
+        .modal-title-cn { font-size: 1.4rem; color: var(--primary); }
+        .modal-title-pinyin { font-size: 0.95rem; color: var(--text-light); margin-bottom: 1rem; }
+        .modal-desc { color: #444; margin-bottom: 1.5rem; line-height: 1.7; }
+
+        .modal-meta { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+        .close-btn {
+            position: absolute; top: 1rem; right: 1rem;
+            background: #f1f3f5; border: none;
+            width: 32px; height: 32px; border-radius: 50%;
+            cursor: pointer; font-weight: bold; font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .close-btn:hover { background: #dee2e6; }
+
+        .no-results {
+            text-align: center; grid-column: 1 / -1;
+            padding: 4rem; color: var(--text-light); font-size: 1.2rem;
+        }
+
+        footer {
+            text-align: center; padding: 3rem;
+            color: var(--text-light); font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>ZooLingo</h1>
+        <p class="subtitle">英中动物词典 · English-Chinese Animal Dictionary</p>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="搜索动物 (e.g., Lion, 老虎, capybara)...">
+        </div>
+        <div class="filter-bar" id="filterBar"></div>
+    </header>
+
+    <div class="container">
+        <div class="animal-grid" id="animalGrid"></div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <div class="modal-emoji" id="modalEmoji"></div>
+            <div class="modal-title-en" id="modalEn"></div>
+            <div class="modal-title-cn" id="modalCn"></div>
+            <div class="modal-title-pinyin" id="modalPinyin"></div>
+            <p class="modal-desc" id="modalDesc"></p>
+            <div class="modal-meta">
+                <span class="card-tag" id="modalHabitat"></span>
+                <span class="card-tag" id="modalTrending" style="display:none"></span>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 ZooLingo · 为学习而设计</p>
+    </footer>
+
+    <script>
+        const animals = [
+            // 经典常见动物
+            { id:1,  en:"Lion",         cn:"狮子",   pinyin:"Shīzi",        desc:"被称为草原之王，雄狮有威武的鬃毛，吼声震天。",                    habitat:"热带草原", emoji:"🦁", trending:false },
+            { id:2,  en:"Tiger",        cn:"老虎",   pinyin:"Lǎohǔ",        desc:"最大的猫科动物，橙色皮毛上有黑色竖纹，是中国文化中的力量象征。",  habitat:"森林/草原", emoji:"🐯", trending:false },
+            { id:3,  en:"Giant Panda",  cn:"大熊猫", pinyin:"Dàxióngmāo",   desc:"中国国宝，黑白相间的熊，主食竹子，性情温顺。",                    habitat:"竹林",     emoji:"🐼", trending:false },
+            { id:4,  en:"Elephant",     cn:"大象",   pinyin:"Dàxiàng",      desc:"陆地上最大的动物，长鼻子可以抓取食物和喝水，记忆力极强。",          habitat:"草原/森林", emoji:"🐘", trending:false },
+            { id:5,  en:"Giraffe",      cn:"长颈鹿", pinyin:"Chángjǐnglù",  desc:"陆地上最高的动物，长脖子可以吃到高处的树叶。",                      habitat:"热带草原", emoji:"🦒", trending:false },
+            { id:6,  en:"Zebra",        cn:"斑马",   pinyin:"Bānmǎ",        desc:"非洲特有的马科动物，黑白条纹是其独特标志，每匹斑马的条纹都不同。",  habitat:"草原",     emoji:"🦓", trending:false },
+            { id:7,  en:"Penguin",      cn:"企鹅",   pinyin:"Qǐ'é",         desc:"不会飞的鸟类，生活在南半球，擅长游泳，用翅膀划水。",                habitat:"南极/海岸", emoji:"🐧", trending:false },
+            { id:8,  en:"Dolphin",      cn:"海豚",   pinyin:"Hǎitún",       desc:"高智商的海洋哺乳动物，以活泼好动和友善著称，能发出超声波定位。",    habitat:"海洋",     emoji:"🐬", trending:false },
+            { id:9,  en:"Koala",        cn:"考拉",   pinyin:"Kǎolā",        desc:"澳大利亚特有的有袋动物，以桉树叶为食，每天睡眠长达20小时。",        habitat:"桉树林",   emoji:"🐨", trending:false },
+            { id:10, en:"Fox",          cn:"狐狸",   pinyin:"Húli",         desc:"聪明机敏的犬科动物，适应能力强，在城市和野外都能生存。",              habitat:"森林/城市", emoji:"🦊", trending:false },
+            { id:11, en:"Owl",          cn:"猫头鹰", pinyin:"Māotóuyīng",   desc:"夜行性猛禽，大眼睛可在黑暗中视物，头部可旋转270度。",               habitat:"森林",     emoji:"🦉", trending:false },
+            { id:12, en:"Sloth",        cn:"树懒",   pinyin:"Shùlǎn",       desc:"世界上移动最慢的哺乳动物，大部分时间倒挂在树上，动作极其缓慢。",    habitat:"热带雨林", emoji:"🦥", trending:false },
+            { id:13, en:"Wolf",         cn:"狼",     pinyin:"Láng",         desc:"群居的犬科动物，以嚎叫声和团队协作狩猎著称，是狗的祖先。",            habitat:"森林/草原", emoji:"🐺", trending:false },
+            { id:14, en:"Bear",         cn:"熊",     pinyin:"Xióng",        desc:"体型庞大的哺乳动物，杂食性，冬季会冬眠，力量极强。",                  habitat:"森林/山地", emoji:"🐻", trending:false },
+            { id:15, en:"Rabbit",       cn:"兔子",   pinyin:"Tùzi",         desc:"耳朵长、腿部有力的小型哺乳动物，繁殖能力极强，是常见宠物。",          habitat:"草地/森林", emoji:"🐰", trending:false },
+            { id:16, en:"Horse",        cn:"马",     pinyin:"Mǎ",           desc:"人类最早驯化的动物之一，奔跑速度快，与人类文明发展密切相关。",        habitat:"草原",     emoji:"🐴", trending:false },
+            { id:17, en:"Cow",          cn:"牛",     pinyin:"Niú",          desc:"重要的家畜，提供牛奶和肉类，在农业文明中扮演重要角色。",              habitat:"农场/草原", emoji:"🐄", trending:false },
+            { id:18, en:"Pig",          cn:"猪",     pinyin:"Zhū",          desc:"智商较高的家畜，嗅觉灵敏，是全球最重要的肉食来源之一。",              habitat:"农场",     emoji:"🐷", trending:false },
+            { id:19, en:"Chicken",      cn:"鸡",     pinyin:"Jī",           desc:"全球数量最多的鸟类，是重要的家禽，提供鸡蛋和鸡肉。",                  habitat:"农场",     emoji:"🐔", trending:false },
+            { id:20, en:"Cat",          cn:"猫",     pinyin:"Māo",          desc:"最受欢迎的宠物之一，独立性强，夜视能力出色，是优秀的猎手。",          habitat:"家庭/城市", emoji:"🐱", trending:false },
+            { id:21, en:"Dog",          cn:"狗",     pinyin:"Gǒu",          desc:"人类最忠实的伙伴，被驯化超过15000年，嗅觉比人类灵敏1000倍。",        habitat:"家庭/城市", emoji:"🐶", trending:false },
+            { id:22, en:"Monkey",       cn:"猴子",   pinyin:"Hóuzi",        desc:"灵长类动物，与人类基因相似度高，善于使用工具，社会性强。",            habitat:"热带雨林", emoji:"🐒", trending:false },
+            { id:23, en:"Crocodile",    cn:"鳄鱼",   pinyin:"Èyú",          desc:"现存最大的爬行动物之一，咬合力极强，是地球上最古老的生物之一。",      habitat:"河流/湿地", emoji:"🐊", trending:false },
+            { id:24, en:"Shark",        cn:"鲨鱼",   pinyin:"Shāyú",        desc:"海洋中的顶级捕食者，嗅觉极其灵敏，能感知远处的血液气味。",            habitat:"海洋",     emoji:"🦈", trending:false },
+            { id:25, en:"Eagle",        cn:"鹰",     pinyin:"Yīng",         desc:"猛禽之王，视力是人类的8倍，翱翔高空，象征自由与力量。",               habitat:"山地/草原", emoji:"🦅", trending:false },
+            { id:26, en:"Frog",         cn:"青蛙",   pinyin:"Qīngwā",       desc:"两栖动物，幼年在水中生活，成年后可在陆地活动，以昆虫为食。",          habitat:"湿地/水边", emoji:"🐸", trending:false },
+            { id:27, en:"Snake",        cn:"蛇",     pinyin:"Shé",          desc:"无腿爬行动物，用舌头感知气味，部分种类有毒，是重要的生态调节者。",    habitat:"森林/草地", emoji:"🐍", trending:false },
+            { id:28, en:"Turtle",       cn:"乌龟",   pinyin:"Wūguī",        desc:"长寿的爬行动物，有坚硬的外壳保护，部分种类寿命超过100年。",           habitat:"水边/海洋", emoji:"🐢", trending:false },
+            // 近年流行/网红动物
+            { id:29, en:"Capybara",     cn:"水豚",   pinyin:"Shuǐtún",      desc:"世界上最大的啮齿动物，性格温顺，与几乎所有动物都能和平相处，是近年最火的网红动物。", habitat:"河流/湿地", emoji:"🐾", trending:true },
+            { id:30, en:"Axolotl",      cn:"六角恐龙", pinyin:"Liùjiǎo kǒnglóng", desc:"墨西哥钝口螈，终生保持幼体形态，有强大的再生能力，能再生四肢甚至心脏，深受年轻人喜爱。", habitat:"湖泊",  emoji:"🦎", trending:true },
+            { id:31, en:"Red Panda",    cn:"小熊猫", pinyin:"Xiǎoxióngmāo", desc:"与大熊猫同名但不同科，外形像浣熊，毛色红棕，以竹子为食，是超人气网红动物。",  habitat:"山地竹林", emoji:"🦝", trending:true },
+            { id:32, en:"Quokka",       cn:"短尾矮袋鼠", pinyin:"Duǎnwěi ǎi dài shǔ", desc:"澳大利亚特有的小型有袋动物，因总是面带微笑被称为'世界上最快乐的动物'，自拍神器。", habitat:"澳大利亚岛屿", emoji:"🦘", trending:true },
+            { id:33, en:"Meerkat",      cn:"猫鼬",   pinyin:"Māoyòu",       desc:"非洲小型哺乳动物，喜欢直立站立瞭望，群居生活，互相照顾，因纪录片走红全球。",  habitat:"沙漠/草原", emoji:"🐿️", trending:true },
+            { id:34, en:"Fennec Fox",   cn:"耳廓狐", pinyin:"Ěrkuò hú",     desc:"世界上最小的狐狸，有着超大的耳朵，生活在撒哈拉沙漠，是超萌的网红动物。",      habitat:"沙漠",     emoji:"🦊", trending:true },
+            { id:35, en:"Slow Loris",   cn:"懒猴",   pinyin:"Lǎn hóu",      desc:"夜行性灵长类动物，动作缓慢，眼睛大而圆，是濒危保护动物，禁止私人饲养。",        habitat:"热带雨林", emoji:"🐒", trending:true },
+            { id:36, en:"Alpaca",       cn:"羊驼",   pinyin:"Yángtuó",      desc:"南美洲的驼科动物，毛茸茸的外形和呆萌表情使其成为表情包界的明星，'草泥马'文化的主角。", habitat:"高原/草地", emoji:"🦙", trending:true },
+            { id:37, en:"Flamingo",     cn:"火烈鸟", pinyin:"Huǒliè niǎo",  desc:"以鲜艳的粉红色羽毛著称，单腿站立是其标志性姿势，粉色来自食物中的类胡萝卜素。",  habitat:"湖泊/湿地", emoji:"🦩", trending:true },
+            { id:38, en:"Narwhal",      cn:"独角鲸", pinyin:"Dújiǎo jīng",  desc:"被称为'海洋独角兽'，头部长有螺旋状长牙，生活在北极海域，神秘而罕见。",          habitat:"北极海洋", emoji:"🦄", trending:true },
+            { id:39, en:"Platypus",     cn:"鸭嘴兽", pinyin:"Yāzuǐ shòu",   desc:"澳大利亚特有的哺乳动物，有鸭嘴、水獭身和海狸尾，是少数会产卵的哺乳动物。",      habitat:"河流/湖泊", emoji:"🦫", trending:true },
+            { id:40, en:"Pangolin",       cn:"穿山甲",   pinyin:"Chuānshānjiǎ",  desc:"全身覆盖鳞片的哺乳动物，受到威胁时会蜷缩成球，是世界上被非法交易最多的动物。",    habitat:"森林/草地", emoji:"🐾", trending:true },
+            // 常见大型动物补充
+            { id:41, en:"Whale",           cn:"鲸鱼",     pinyin:"Jīngyú",         desc:"地球上最大的动物，蓝鲸体长可达30米，是哺乳动物，用肺呼吸，每隔一段时间需浮出水面换气。", habitat:"海洋",     emoji:"🐋", trending:false },
+            { id:42, en:"Hippopotamus",    cn:"河马",     pinyin:"Hémǎ",           desc:"非洲最大的陆地动物之一，大部分时间泡在水中降温，尽管看起来笨重，奔跑速度可达30km/h。", habitat:"河流/湖泊", emoji:"🦛", trending:false },
+            { id:43, en:"Rhinoceros",      cn:"犀牛",     pinyin:"Xīniú",          desc:"头上长有一或两只角的大型哺乳动物，皮肤厚实，是濒危物种，因角被非法猎杀。",            habitat:"草原/森林", emoji:"🦏", trending:false },
+            { id:44, en:"Gorilla",         cn:"大猩猩",   pinyin:"Dàxīngxīng",     desc:"最大的灵长类动物，与人类基因相似度达98%，生活在非洲热带雨林，以植物为食。",            habitat:"热带雨林", emoji:"🦍", trending:false },
+            { id:45, en:"Cheetah",         cn:"猎豹",     pinyin:"Lièbào",         desc:"陆地上跑得最快的动物，时速可达120km/h，细长的身体和黑色泪痕是其标志。",               habitat:"热带草原", emoji:"🐆", trending:false },
+            { id:46, en:"Leopard",         cn:"豹子",     pinyin:"Bàozi",          desc:"善于爬树的大型猫科动物，身上有黑色斑点，独居且行踪隐秘，适应力极强。",                  habitat:"森林/草原", emoji:"🐆", trending:false },
+            { id:47, en:"Camel",           cn:"骆驼",     pinyin:"Luòtuo",         desc:"沙漠之舟，驼峰储存脂肪而非水，能在极端干旱环境中生存数周不喝水。",                      habitat:"沙漠",     emoji:"🐪", trending:false },
+            { id:48, en:"Kangaroo",        cn:"袋鼠",     pinyin:"Dàishǔ",         desc:"澳大利亚的标志性动物，用强壮的后腿跳跃，幼崽在育儿袋中成长。",                          habitat:"草原/灌木", emoji:"🦘", trending:false },
+            { id:49, en:"Octopus",         cn:"章鱼",     pinyin:"Zhāngyú",        desc:"有八条触手的软体动物，智商极高，能改变皮肤颜色伪装，可以打开瓶盖解决问题。",            habitat:"海洋",     emoji:"🐙", trending:false },
+            { id:50, en:"Peacock",         cn:"孔雀",     pinyin:"Kǒngquè",        desc:"以华丽的尾羽著称，雄孔雀开屏是求偶行为，羽毛上的眼状花纹极为美丽。",                    habitat:"森林/草地", emoji:"🦚", trending:false },
+            // 海洋/水生动物
+            { id:51, en:"Crab",            cn:"螃蟹",     pinyin:"Pángxiè",        desc:"有十条腿的甲壳类动物，横着走路，坚硬的外壳保护柔软的身体，是重要的海鲜食材。",            habitat:"海洋/海岸", emoji:"🦀", trending:false },
+            { id:52, en:"Shrimp",          cn:"虾",       pinyin:"Xiā",            desc:"小型甲壳类水生动物，全球分布广泛，是最重要的海鲜之一，营养丰富。",                          habitat:"海洋/淡水", emoji:"🦐", trending:false },
+            { id:53, en:"Lobster",         cn:"龙虾",     pinyin:"Lóngxiā",        desc:"大型甲壳类动物，有强壮的螯，生活在海底，是名贵的海鲜食材。",                                habitat:"海洋",     emoji:"🦞", trending:false },
+            { id:54, en:"Jellyfish",       cn:"水母",     pinyin:"Shuǐmǔ",         desc:"无骨骼的海洋动物，身体透明如胶，触手可蜇人，是地球上最古老的生物之一。",                    habitat:"海洋",     emoji:"🪼", trending:false },
+            { id:55, en:"Seahorse",        cn:"海马",     pinyin:"Hǎimǎ",          desc:"由雄性负责孕育后代的鱼类，游泳能力弱，靠尾巴缠绕海草固定身体。",                            habitat:"海洋",     emoji:"🐠", trending:false },
+            { id:56, en:"Goldfish",        cn:"金鱼",     pinyin:"Jīnyú",          desc:"由鲫鱼驯化而来的观赏鱼，在中国有超过1000年的养殖历史，品种繁多。",                          habitat:"淡水/家庭", emoji:"🐟", trending:false },
+            { id:57, en:"Salmon",          cn:"三文鱼",   pinyin:"Sānwènyú",       desc:"洄游性鱼类，在淡水出生，在海洋成长，产卵时逆流而上回到出生地，富含Omega-3。",               habitat:"海洋/河流", emoji:"🐟", trending:false },
+            { id:58, en:"Seal",            cn:"海豹",     pinyin:"Hǎibào",         desc:"半水栖哺乳动物，擅长游泳，在陆地上行动笨拙，以鱼类为食，叫声响亮。",                        habitat:"海岸/极地", emoji:"🦭", trending:false },
+            // 鸟类
+            { id:59, en:"Parrot",          cn:"鹦鹉",     pinyin:"Yīngwǔ",         desc:"能模仿人类说话的鸟类，羽毛色彩鲜艳，智商较高，是受欢迎的宠物鸟。",                          habitat:"热带雨林", emoji:"🦜", trending:false },
+            { id:60, en:"Swan",            cn:"天鹅",     pinyin:"Tiān'é",         desc:"优雅的大型水鸟，洁白的羽毛象征纯洁，终身配对，是忠贞爱情的象征。",                          habitat:"湖泊/河流", emoji:"🦢", trending:false },
+            { id:61, en:"Duck",            cn:"鸭子",     pinyin:"Yāzi",           desc:"常见的水禽，嘴扁平，脚有蹼，既能游泳又能飞翔，是重要的家禽。",                              habitat:"湖泊/农场", emoji:"🦆", trending:false },
+            { id:62, en:"Rooster",         cn:"公鸡",     pinyin:"Gōngjī",         desc:"雄性鸡，头顶红冠，每天清晨啼鸣报晓，是中国十二生肖之一。",                                  habitat:"农场",     emoji:"🐓", trending:false },
+            { id:63, en:"Pigeon",          cn:"鸽子",     pinyin:"Gēzi",           desc:"归��能力极强的鸟类，历史上用于传递信息，象征和平，在城市中随处可见。",                      habitat:"城市/农村", emoji:"🕊️", trending:false },
+            { id:64, en:"Sparrow",         cn:"麻雀",     pinyin:"Máquè",          desc:"最常见的小型鸟类之一，适应城市生活，活泼好动，叫声清脆。",                                    habitat:"城市/农村", emoji:"🐦", trending:false },
+            // 昆虫/小动物
+            { id:65, en:"Butterfly",       cn:"蝴蝶",     pinyin:"Húdié",          desc:"由毛毛虫经过蛹期变态发育而来，翅膀上有美丽的花纹，是重要的传粉昆虫。",                      habitat:"花园/草地", emoji:"🦋", trending:false },
+            { id:66, en:"Bee",             cn:"蜜蜂",     pinyin:"Mìfēng",         desc:"群居昆虫，采集花蜜酿造蜂蜜，是最重要的传粉昆虫，对农业生产至关重要。",                      habitat:"花园/草地", emoji:"🐝", trending:false },
+            { id:67, en:"Ant",             cn:"蚂蚁",     pinyin:"Mǎyǐ",           desc:"群居昆虫，力量是体重的50倍，分工明确，是自然界最成功的社会性动物之一。",                    habitat:"土壤/森林", emoji:"🐜", trending:false },
+            { id:68, en:"Ladybug",         cn:"瓢虫",     pinyin:"Piáochóng",      desc:"红色带黑点的小甲虫，是农业益虫，以蚜虫为食，在许多文化中象征好运。",                        habitat:"花园/草地", emoji:"🐞", trending:false },
+            { id:69, en:"Dragonfly",       cn:"蜻蜓",     pinyin:"Qīngtíng",       desc:"飞行能力极强的昆虫，能向任意方向飞行，幼虫生活在水中，是捕蚊高手。",                        habitat:"湿地/水边", emoji:"🪲", trending:false },
+            { id:70, en:"Spider",          cn:"蜘蛛",     pinyin:"Zhīzhū",         desc:"能吐丝结网的节肢动物，有八条腿，以昆虫为食，蜘蛛网是自然界最精妙的结构之一。",              habitat:"森林/家庭", emoji:"🕷️", trending:false },
+            // 其他常见动物
+            { id:71, en:"Sheep",           cn:"羊",       pinyin:"Yáng",           desc:"重要的家畜，提供羊毛和羊肉，性情温顺，是人类最早驯化的动物之一。",                          habitat:"草原/农场", emoji:"🐑", trending:false },
+            { id:72, en:"Goat",            cn:"山羊",     pinyin:"Shānyáng",       desc:"适应力极强的家畜，能在陡峭山地行走，提供羊奶和羊肉，好奇心旺盛。",                          habitat:"山地/农场", emoji:"🐐", trending:false },
+            { id:73, en:"Donkey",          cn:"驴",       pinyin:"Lǘ",             desc:"耐力强的役用动物，性格倔强，听力极好，在农业社会中是重要的劳动力。",                        habitat:"农场/山地", emoji:"🫏", trending:false },
+            { id:74, en:"Deer",            cn:"鹿",       pinyin:"Lù",             desc:"优雅的哺乳动物，雄鹿有分叉的鹿角，每年脱落再生，是森林中的常见动物。",                      habitat:"森林/草原", emoji:"🦌", trending:false },
+            { id:75, en:"Squirrel",        cn:"松鼠",     pinyin:"Sōngshǔ",        desc:"以大尾巴著称的小型啮齿动物，善于爬树，秋天会储存坚果过冬，记忆力惊人。",                    habitat:"森林/公园", emoji:"🐿️", trending:false },
+            { id:76, en:"Rat",             cn:"老鼠",     pinyin:"Lǎoshǔ",         desc:"适应力极强的啮齿动物，与人类共存数千年，智商较高，是重要的实验室动物，也是中国十二生肖之首。", habitat:"城市/农村", emoji:"🐀", trending:false },
+            { id:77, en:"Hamster",         cn:"仓鼠",     pinyin:"Cāngshǔ",        desc:"小型啮齿动物，脸颊有储粮用的颊囊，夜行性，是极受欢迎的小型宠物。",                              habitat:"草原/家庭", emoji:"🐹", trending:false },
+            { id:78, en:"Hedgehog",        cn:"刺猬",     pinyin:"Cìwei",          desc:"背部覆盖尖刺的小型哺乳动物，受到威胁时蜷成球，以昆虫和蜗牛为食，冬季冬眠。",                    habitat:"草地/森林", emoji:"🦔", trending:false },
+        ];
+
+        const habitats = [...new Set(animals.map(a => a.habitat))].sort();
+        let activeFilter = 'all';
+
+        const grid = document.getElementById('animalGrid');
+        const searchInput = document.getElementById('searchInput');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const filterBar = document.getElementById('filterBar');
+
+        // Build filter buttons
+        const allBtn = document.createElement('button');
+        allBtn.className = 'filter-btn active';
+        allBtn.textContent = '全部';
+        allBtn.onclick = () => setFilter('all', allBtn);
+        filterBar.appendChild(allBtn);
+
+        const trendBtn = document.createElement('button');
+        trendBtn.className = 'filter-btn';
+        trendBtn.textContent = '🔥 网红动物';
+        trendBtn.onclick = () => setFilter('trending', trendBtn);
+        filterBar.appendChild(trendBtn);
+
+        function setFilter(val, btn) {
+            activeFilter = val;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const term = searchInput.value.toLowerCase();
+            const filtered = animals.filter(a => {
+                const matchSearch = !term || a.en.toLowerCase().includes(term) || a.cn.includes(term) || a.pinyin.toLowerCase().includes(term);
+                const matchFilter = activeFilter === 'all' || (activeFilter === 'trending' && a.trending) || a.habitat === activeFilter;
+                return matchSearch && matchFilter;
+            });
+            renderAnimals(filtered);
+        }
+
+        searchInput.addEventListener('input', applyFilters);
+
+        function renderAnimals(data) {
+            grid.innerHTML = '';
+            if (data.length === 0) {
+                grid.innerHTML = `<div class="no-results">没有找到 "${searchInput.value}" 相关的动物</div>`;
+                return;
+            }
+            data.forEach(animal => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => openModal(animal);
+                card.innerHTML = `
+                    <div class="card-emoji">${animal.emoji}</div>
+                    <div class="card-english">${animal.en}</div>
+                    <div class="card-chinese">${animal.cn}</div>
+                    <div class="card-pinyin">${animal.pinyin}</div>
+                    <span class="card-tag ${animal.trending ? 'trending' : ''}">${animal.trending ? '🔥 网红' : animal.habitat}</span>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openModal(animal) {
+            document.getElementById('modalEmoji').textContent = animal.emoji;
+            document.getElementById('modalEn').textContent = animal.en;
+            document.getElementById('modalCn').textContent = animal.cn;
+            document.getElementById('modalPinyin').textContent = animal.pinyin;
+            document.getElementById('modalDesc').textContent = animal.desc;
+            document.getElementById('modalHabitat').textContent = '栖息地: ' + animal.habitat;
+            const trendEl = document.getElementById('modalTrending');
+            if (animal.trending) {
+                trendEl.textContent = '🔥 网红动物';
+                trendEl.className = 'card-tag trending';
+                trendEl.style.display = 'inline-block';
+            } else {
+                trendEl.style.display = 'none';
+            }
+            modalOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            modalOverlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+        renderAnimals(animals);
+    </script>
+</body>
+</html>
