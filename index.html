@@ -117,6 +117,10 @@
 
         .card-emoji { font-size: 3rem; line-height: 1; margin-bottom: 0.25rem; }
 
+        .card-svg-icon { width: 3rem; height: 3rem; object-fit: contain; display: block; }
+
+        .modal-svg-icon { width: 5rem; height: 5rem; object-fit: contain; display: block; margin: 0 auto; }
+
         .card-english { font-size: 1.4rem; font-weight: 700; color: var(--text-dark); }
 
         .card-chinese { font-size: 1.15rem; color: var(--primary); font-weight: 500; }
@@ -272,7 +276,7 @@
             { id:36, en:"Alpaca",       cn:"羊驼",   pinyin:"Yángtuó",      desc:"南美洲的驼科动物，毛茸茸的外形和呆萌表情使其成为表情包界的明星，'草泥马'文化的主角。", habitat:"高原/草地", emoji:"🦙", trending:true, category:"哺乳动物" },
             { id:37, en:"Flamingo",     cn:"火烈鸟", pinyin:"Huǒliè niǎo",  desc:"以鲜艳的粉红色羽毛著称，单腿站立是其标志性姿势，粉色来自食物中的类胡萝卜素。",  habitat:"湖泊/湿地", emoji:"🦩", trending:true, category:"鸟类" },
             { id:38, en:"Narwhal",      cn:"独角鲸", pinyin:"Dújiǎo jīng",  desc:"被称为'海洋独角兽'，头部长有螺旋状长牙，生活在北极海域，神秘而罕见。",          habitat:"北极海洋", emoji:"🦄", trending:true, category:"哺乳动物" },
-            { id:39, en:"Platypus",     cn:"鸭嘴兽", pinyin:"Yāzuǐ shòu",   desc:"澳大利亚特有的哺乳动物，有鸭嘴、水獭身和海狸尾，是少数会产卵的哺乳动物。",      habitat:"河流/湖泊", emoji:"🦫", trending:true, category:"哺乳动物" },
+            { id:39, en:"Platypus",     cn:"鸭嘴兽", pinyin:"Yāzuǐ shòu",   desc:"澳大利亚特有的哺乳动物，有鸭嘴、水獭身和海狸尾，是少数会产卵的哺乳动物。",      habitat:"河流/湖泊", emoji:"assets/platypus.svg", trending:true, category:"哺乳动物" },
             { id:40, en:"Pangolin",       cn:"穿山甲",   pinyin:"Chuānshānjiǎ",  desc:"全身覆盖鳞片的哺乳动物，受到威胁时会蜷缩成球，是世界上被非法交易最多的动物。",    habitat:"森林/草地", emoji:"🐾", trending:true, category:"哺乳动物" },
             // 常见大型动物补充
             { id:41, en:"Whale",           cn:"鲸鱼",     pinyin:"Jīngyú",         desc:"地球上最大的动物，蓝鲸体长可达30米，是哺乳动物，用肺呼吸，每隔一段时间需浮出水面换气。", habitat:"海洋",     emoji:"🐋", trending:false, category:"哺乳动物" },
@@ -378,8 +382,11 @@
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.onclick = () => openModal(animal);
+                const iconHtml = animal.emoji.endsWith('.svg')
+                    ? `<img src="${animal.emoji}" class="card-svg-icon" alt="${animal.en}">`
+                    : animal.emoji;
                 card.innerHTML = `
-                    <div class="card-emoji">${animal.emoji}</div>
+                    <div class="card-emoji">${iconHtml}</div>
                     <div class="card-english">${animal.en}</div>
                     <div class="card-chinese">${animal.cn}</div>
                     <div class="card-pinyin">${animal.pinyin}</div>
@@ -390,7 +397,12 @@
         }
 
         function openModal(animal) {
-            document.getElementById('modalEmoji').textContent = animal.emoji;
+            const emojiEl = document.getElementById('modalEmoji');
+            if (animal.emoji.endsWith('.svg')) {
+                emojiEl.innerHTML = `<img src="${animal.emoji}" class="modal-svg-icon" alt="${animal.en}">`;
+            } else {
+                emojiEl.textContent = animal.emoji;
+            }
             document.getElementById('modalEn').textContent = animal.en;
             document.getElementById('modalCn').textContent = animal.cn;
             document.getElementById('modalPinyin').textContent = animal.pinyin;
